@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculator WHT — Withholding Tax</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --cream: #fdf6ee;
+    --warm-white: #fffaf4;
+    --sand: #e8d5b7;
+    --terra: #c4874a;
+    --terra-deep: #a06535;
+    --amber: #e8a742;
+    --rust: #b85c38;
+    --charcoal: #2c2416;
+    --brown-mid: #6b4e2a;
+    --brown-light: #9c7a52;
+    --success: #4a7c59;
+    --success-bg: #eef6f0;
+    --error: #b83232;
+    --shadow-warm: 0 4px 24px rgba(196,135,74,0.13);
+    --shadow-card: 0 2px 16px rgba(44,36,22,0.08);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--charcoal);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, var(--terra-deep) 0%, var(--terra) 60%, var(--amber) 100%);
+    padding: 28px 40px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 4px 20px rgba(160,101,53,0.25);
+  }
+  header .logo-icon {
+    width: 48px; height: 48px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    backdrop-filter: blur(4px);
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.65rem;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.01em;
+  }
+  header p {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.78);
+    margin-top: 2px;
+    font-weight: 300;
+  }
+  .header-badge {
+    margin-left: auto;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ── Layout ── */
+  main {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 36px 28px 60px;
+  }
+
+  /* ── Step pills ── */
+  .steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 36px;
+    background: var(--warm-white);
+    border: 1px solid var(--sand);
+    border-radius: 40px;
+    padding: 6px;
+    max-width: 560px;
+  }
+  .step-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 20px;
+    border-radius: 34px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--brown-light);
+    cursor: pointer;
+    transition: all .2s;
+    display: flex; align-items: center; gap: 7px; justify-content: center;
+  }
+  .step-btn.active {
+    background: linear-gradient(135deg, var(--terra-deep), var(--terra));
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(196,135,74,0.3);
+  }
+  .step-btn .step-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    font-size: 0.72rem;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+  }
+
+  /* ── Panel ── */
+  .panel {
+    background: var(--warm-white);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid #f0e4d2;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .panel-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--charcoal);
+  }
+  .panel-header .ph-icon {
+    font-size: 1.3rem;
+  }
+  .panel-body { padding: 24px 28px; }
+
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 2px dashed var(--sand);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--cream);
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--terra);
+    background: #fef3e8;
+  }
+  .upload-zone input { display: none; }
+  .upload-icon { font-size: 2.5rem; margin-bottom: 10px; }
+  .upload-zone h3 { font-size: 0.95rem; font-weight: 500; color: var(--brown-mid); margin-bottom: 5px; }
+  .upload-zone p { font-size: 0.8rem; color: var(--brown-light); }
+  .upload-zone .btn-browse {
+    margin-top: 14px;
+    display: inline-block;
+    background: linear-gradient(135deg, var(--terra-deep), var(--terra));
+    color: #fff;
+    padding: 9px 22px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity .15s;
+  }
+  .upload-zone .btn-browse:hover { opacity: .9; }
+
+  /* ── OR divider ── */
+  .or-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 22px 0;
+    color: var(--brown-light);
+    font-size: 0.8rem;
+  }
+  .or-divider::before, .or-divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: var(--sand);
+  }
+
+  /* ── Manual add form ── */
+  .manual-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--brown-mid);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--sand);
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    color: var(--charcoal);
+    background: var(--cream);
+    outline: none;
+    transition: border-color .15s;
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--terra);
+    box-shadow: 0 0 0 3px rgba(196,135,74,0.12);
+  }
+  .btn-add {
+    background: linear-gradient(135deg, var(--terra-deep), var(--terra));
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity .15s;
+    height: 42px;
+  }
+  .btn-add:hover { opacity: .9; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; margin-top: 8px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+  thead tr {
+    background: linear-gradient(90deg, #f5e8d4, #fdf0e0);
+  }
+  thead th {
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--brown-mid);
+    border-bottom: 2px solid var(--sand);
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid #f0e4d2;
+    transition: background .1s;
+  }
+  tbody tr:hover { background: #fef8f0; }
+  tbody td {
+    padding: 11px 14px;
+    color: var(--charcoal);
+    vertical-align: middle;
+  }
+  .td-doc { font-family: monospace; font-size: 0.82rem; color: var(--brown-mid); }
+  .td-amount { font-weight: 600; }
+  .td-wht-val { color: var(--rust); font-weight: 500; }
+  .td-net { color: var(--success); font-weight: 700; font-size: 0.92rem; }
+
+  .wht-input {
+    width: 80px;
+    padding: 6px 10px;
+    border: 1.5px solid var(--sand);
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.84rem;
+    text-align: right;
+    outline: none;
+    background: var(--cream);
+    transition: border-color .15s;
+  }
+  .wht-input:focus {
+    border-color: var(--terra);
+    box-shadow: 0 0 0 3px rgba(196,135,74,0.12);
+  }
+
+  .btn-delete {
+    background: none; border: none; cursor: pointer;
+    color: #cca888; font-size: 1rem;
+    padding: 4px 8px; border-radius: 6px;
+    transition: color .15s, background .15s;
+  }
+  .btn-delete:hover { color: var(--rust); background: #fff0eb; }
+
+  .currency-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: #f0e4d2;
+    color: var(--brown-mid);
+    padding: 2px 7px;
+    border-radius: 5px;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+
+  /* ── Summary card ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 28px;
+  }
+  .summary-card {
+    background: var(--cream);
+    border: 1px solid var(--sand);
+    border-radius: 12px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .summary-card.sc-total::before { background: var(--amber); }
+  .summary-card.sc-wht::before { background: var(--rust); }
+  .summary-card.sc-net::before { background: var(--success); }
+  .summary-card .sc-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--brown-light);
+    margin-bottom: 6px;
+  }
+  .summary-card .sc-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+  .sc-total .sc-value { color: var(--charcoal); }
+  .sc-wht .sc-value { color: var(--rust); }
+  .sc-net .sc-value { color: var(--success); }
+  .summary-card .sc-sub {
+    font-size: 0.76rem;
+    color: var(--brown-light);
+    margin-top: 4px;
+  }
+
+  /* ── Formula box ── */
+  .formula-box {
+    background: #fff9f2;
+    border: 1px solid #f0d9b8;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 22px;
+    font-size: 0.82rem;
+    color: var(--brown-mid);
+    line-height: 1.7;
+  }
+  .formula-box strong { color: var(--terra-deep); }
+  .formula-eq {
+    font-family: monospace;
+    font-size: 0.85rem;
+    background: #fdefd8;
+    padding: 2px 7px;
+    border-radius: 5px;
+    margin: 0 3px;
+  }
+
+  /* ── Action bar ── */
+  .action-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .btn-export {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 22px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+  }
+  .btn-export.excel {
+    background: linear-gradient(135deg, #2e7d32, #43a047);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(46,125,50,0.2);
+  }
+  .btn-export.csv {
+    background: var(--warm-white);
+    color: var(--brown-mid);
+    border: 1.5px solid var(--sand);
+  }
+  .btn-export:hover { opacity: .88; transform: translateY(-1px); }
+  .btn-clear {
+    margin-left: auto;
+    background: none;
+    border: 1.5px solid #e8c9aa;
+    color: var(--brown-light);
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.84rem;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-clear:hover { border-color: var(--rust); color: var(--rust); }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--brown-light);
+  }
+  .empty-state .es-icon { font-size: 2.5rem; margin-bottom: 10px; }
+  .empty-state p { font-size: 0.88rem; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    background: var(--charcoal);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: all .25s;
+    z-index: 1000;
+    max-width: 300px;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Responsive ── */
+  @media(max-width: 700px) {
+    .manual-form { grid-template-columns: 1fr 1fr; }
+    .summary-grid { grid-template-columns: 1fr; }
+    header { padding: 20px; }
+    main { padding: 20px 14px; }
+    .panel-body { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">💼</div>
+  <div>
+    <h1>Calculator WHT</h1>
+    <p>Withholding Tax · Departament financiar</p>
+  </div>
+  <div class="header-badge">Internal tool</div>
+</header>
+
+<main>
+
+  <!-- Steps -->
+  <div class="steps">
+    <button class="step-btn active" onclick="setView('import')" id="step-import">
+      <span class="step-num">1</span> Importă / adaugă
+    </button>
+    <button class="step-btn" onclick="setView('calc')" id="step-calc">
+      <span class="step-num">2</span> Calcul WHT
+    </button>
+    <button class="step-btn" onclick="setView('export')" id="step-export">
+      <span class="step-num">3</span> Export
+    </button>
+  </div>
+
+  <!-- VIEW: Import -->
+  <div id="view-import">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="ph-icon">📂</span>
+        <div>
+          <h2>Importă documente din Excel / SAP</h2>
+        </div>
+      </div>
+      <div class="panel-body">
+
+        <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileUpload(event)">
+          <div class="upload-icon">📊</div>
+          <h3>Trage fișierul Excel sau CSV aici</h3>
+          <p>Format acceptat: .xlsx, .xls, .csv · Export SAP sau format personalizat</p>
+          <button class="btn-browse" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">Alege fișier</button>
+        </div>
+
+        <div class="or-divider">sau adaugă manual</div>
+
+        <div class="manual-form">
+          <div class="form-group">
+            <label>Nr. document</label>
+            <input type="text" id="inp-doc" placeholder="ex: 1250700299">
+          </div>
+          <div class="form-group">
+            <label>Sumă brută</label>
+            <input type="number" id="inp-amount" placeholder="ex: 1869.00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Monedă</label>
+            <select id="inp-currency">
+              <option>GBP</option><option>SAR</option><option>EUR</option>
+              <option>USD</option><option>RON</option><option>CHF</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn-add" onclick="addManual()">+ Adaugă</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Preview if docs exist -->
+    <div id="import-preview" style="margin-top:20px; display:none;">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="ph-icon">📋</span>
+          <h2 id="preview-title">Documente încărcate</h2>
+          <button class="btn-export csv" style="margin-left:auto; padding:7px 14px; font-size:0.8rem;" onclick="setView('calc')">Mergi la calcul →</button>
+        </div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table id="preview-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nr. document</th>
+                  <th>Sumă brută</th>
+                  <th>Monedă</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="preview-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: Calcul -->
+  <div id="view-calc" style="display:none;">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="ph-icon">🧮</span>
+        <h2>Calcul WHT per document</h2>
+      </div>
+      <div class="panel-body">
+
+        <!-- Global WHT quick set -->
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px; padding:14px 18px; background:var(--cream); border-radius:10px; border:1px solid var(--sand); flex-wrap:wrap;">
+          <span style="font-size:0.82rem; font-weight:500; color:var(--brown-mid);">Setează WHT global pentru toate documentele:</span>
+          <input type="number" id="global-wht" placeholder="ex: 15" min="0" max="100" step="0.1"
+            style="width:90px; padding:7px 10px; border:1.5px solid var(--sand); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.88rem; outline:none;"
+            onfocus="this.style.borderColor='var(--terra)'" onblur="this.style.borderColor='var(--sand)'">
+          <span style="font-size:0.85rem; color:var(--brown-light);">%</span>
+          <button class="btn-add" style="padding:8px 16px; font-size:0.82rem;" onclick="applyGlobalWHT()">Aplică la toate</button>
+        </div>
+
+        <div class="table-wrap">
+          <table id="calc-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nr. document</th>
+                <th>Sumă brută</th>
+                <th>WHT %</th>
+                <th>Valoare WHT</th>
+                <th>Sumă netă de plată</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="calc-body">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty state -->
+        <div id="calc-empty" class="empty-state" style="display:none;">
+          <div class="es-icon">📄</div>
+          <p>Nu există documente. Adaugă-le în pasul 1.</p>
+        </div>
+
+        <!-- Summary -->
+        <div id="summary-section" style="display:none;">
+          <div class="summary-grid">
+            <div class="summary-card sc-total">
+              <div class="sc-label">Total brut</div>
+              <div class="sc-value" id="sum-gross">0.00</div>
+              <div class="sc-sub" id="sum-currency-1">—</div>
+            </div>
+            <div class="summary-card sc-wht">
+              <div class="sc-label">Total WHT reținut</div>
+              <div class="sc-value" id="sum-wht">0.00</div>
+              <div class="sc-sub" id="sum-currency-2">—</div>
+            </div>
+            <div class="summary-card sc-net">
+              <div class="sc-label">Total net de plată ✓</div>
+              <div class="sc-value" id="sum-net">0.00</div>
+              <div class="sc-sub" id="sum-currency-3">—</div>
+            </div>
+          </div>
+
+          <div class="formula-box">
+            <strong>📐 Logica de calcul:</strong><br>
+            <strong>Valoare WHT</strong> = <span class="formula-eq">Sumă brută × (WHT% / 100)</span><br>
+            <strong>Sumă netă de plată</strong> = <span class="formula-eq">Sumă brută − Valoare WHT</span><br>
+            <span style="color:var(--brown-light); font-size:0.78rem;">Exemplu: 1,869.00 GBP × 15% = 280.35 WHT → Net = 1,588.65 GBP</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: Export -->
+  <div id="view-export" style="display:none;">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="ph-icon">📤</span>
+        <h2>Export rezultate</h2>
+      </div>
+      <div class="panel-body">
+
+        <!-- Summary recap -->
+        <div id="export-summary" style="margin-bottom:24px;">
+          <div class="summary-grid">
+            <div class="summary-card sc-total">
+              <div class="sc-label">Total brut</div>
+              <div class="sc-value" id="exp-gross">—</div>
+            </div>
+            <div class="summary-card sc-wht">
+              <div class="sc-label">Total WHT</div>
+              <div class="sc-value" id="exp-wht">—</div>
+            </div>
+            <div class="summary-card sc-net">
+              <div class="sc-label">Net de plată</div>
+              <div class="sc-value" id="exp-net">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn-export excel" onclick="exportExcel()">
+            <span>📊</span> Export Excel (.xlsx)
+          </button>
+          <button class="btn-export csv" onclick="exportCSV()">
+            <span>📄</span> Export CSV
+          </button>
+          <button class="btn-clear" onclick="clearAll()">🗑 Resetează tot</button>
+        </div>
+
+        <div style="margin-top:28px; padding:20px; background:var(--cream); border-radius:10px; border:1px solid var(--sand); font-size:0.82rem; color:var(--brown-mid); line-height:1.8;">
+          <strong style="display:block; margin-bottom:6px;">Fișierul exportat va conține:</strong>
+          ✔ Nr. document · Sumă brută · WHT% · Valoare WHT · Sumă netă<br>
+          ✔ Rând de total consolidat<br>
+          ✔ Data și ora exportului<br>
+          ✔ Formatare financiară cu 2 zecimale
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ── State ──
+let docs = [];
+let nextId = 1;
+
+// ── View management ──
+function setView(v) {
+  ['import','calc','export'].forEach(x => {
+    document.getElementById('view-'+x).style.display = x===v ? 'block' : 'none';
+    document.getElementById('step-'+x).classList.toggle('active', x===v);
+  });
+  if(v==='calc') renderCalc();
+  if(v==='export') renderExport();
+}
+
+// ── Add manual doc ──
+function addManual() {
+  const docNum = document.getElementById('inp-doc').value.trim() || ('DOC-'+String(nextId).padStart(4,'0'));
+  const amount = parseFloat(document.getElementById('inp-amount').value);
+  const currency = document.getElementById('inp-currency').value;
+  if(!amount || amount <= 0) { showToast('Introdu o sumă brută validă.'); return; }
+  docs.push({ id: nextId++, docNum, amount, currency, wht: 15 });
+  document.getElementById('inp-doc').value = '';
+  document.getElementById('inp-amount').value = '';
+  renderPreview();
+  document.getElementById('import-preview').style.display = 'block';
+  showToast('Document adăugat cu succes ✓');
+}
+
+// ── File upload ──
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const wb = XLSX.read(evt.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, {header:1});
+
+      let imported = 0;
+
+      // Detect SAP export format: col 0 starts with '@', col 6 = doc nr, col 7 = currency, col 8 = Amount in doc. curr.
+      const isSAP = data.length > 0 && String(data[0][0]||'').startsWith('@');
+
+      // For generic files, find header row to locate Amount column
+      let headerRow = -1, colDoc = -1, colAmount = -1, colCurrency = -1;
+      if(!isSAP) {
+        for(let i = 0; i < Math.min(5, data.length); i++) {
+          const r = data[i].map(c => String(c||'').toLowerCase());
+          const amtIdx = r.findIndex(c => c.includes('amount') || c.includes('suma') || c.includes('brut'));
+          if(amtIdx >= 0) {
+            headerRow = i;
+            colAmount = amtIdx;
+            colDoc = r.findIndex(c => c.includes('doc') || c.includes('nr') || c.includes('invoice'));
+            colCurrency = r.findIndex(c => c.includes('curr') || c.includes('moned'));
+            break;
+          }
+        }
+      }
+
+      data.forEach((row, i) => {
+        if(!row || row.every(c => c === null || c === undefined || c === '')) return;
+
+        let docNum, amount, currency = 'GBP';
+
+        if(isSAP) {
+          // SAP format: skip non-data rows (only process rows starting with '@')
+          if(!String(row[0]||'').startsWith('@')) return;
+          // Col 6 = document number, col 7 = currency (GBP), col 8 = Amount in doc. curr. (e.g. "1,869.00-")
+          docNum = String(Math.round(row[6]||0));
+          currency = String(row[7]||'GBP').trim().toUpperCase();
+          const rawAmt = String(row[8]||'').replace(/[,\s]/g,'').replace(/-/g,'').trim();
+          amount = parseFloat(rawAmt);
+        } else if(headerRow >= 0 && i > headerRow) {
+          // Generic file with detected header
+          docNum = colDoc >= 0 ? String(row[colDoc]||'').trim() : 'DOC-'+String(nextId).padStart(4,'0');
+          const rawAmt = String(row[colAmount]||'').replace(/[,\s]/g,'').replace(/-/g,'').trim();
+          amount = parseFloat(rawAmt);
+          if(colCurrency >= 0) {
+            const c = String(row[colCurrency]||'').trim().toUpperCase();
+            if(['GBP','SAR','EUR','USD','RON','CHF'].includes(c)) currency = c;
+          }
+          row.forEach(c => {
+            const cu = String(c||'').trim().toUpperCase();
+            if(['GBP','SAR','EUR','USD','RON','CHF'].includes(cu)) currency = cu;
+          });
+        } else {
+          return;
+        }
+
+        if(!docNum || docNum === 'NaN' || docNum === '0') docNum = 'DOC-'+String(nextId).padStart(4,'0');
+        if(!isNaN(amount) && amount > 0) {
+          docs.push({ id: nextId++, docNum, amount, currency, wht: 15 });
+          imported++;
+        }
+      });
+
+      if(imported > 0) {
+        renderPreview();
+        document.getElementById('import-preview').style.display = 'block';
+        showToast(imported+' documente importate ✓');
+      } else {
+        showToast('Nu s-au putut detecta documente valide în fișier.');
+      }
+    } catch(err) {
+      showToast('Eroare la citirea fișierului. Verifică formatul.');
+    }
+  };
+  reader.readAsBinaryString(file);
+  e.target.value = '';
+}
+
+// ── Render preview (step 1) ──
+function renderPreview() {
+  const tbody = document.getElementById('preview-body');
+  const title = document.getElementById('preview-title');
+  title.textContent = docs.length + ' document' + (docs.length===1?'':'e') + ' încărcate';
+  tbody.innerHTML = docs.map((d,i) => `
+    <tr>
+      <td style="color:var(--brown-light); font-size:0.8rem;">${i+1}</td>
+      <td class="td-doc">${d.docNum}</td>
+      <td class="td-amount">${fmt(d.amount)} <span class="currency-badge">${d.currency}</span></td>
+      <td>${d.currency}</td>
+      <td><button class="btn-delete" onclick="removeDoc(${d.id})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function removeDoc(id) {
+  docs = docs.filter(d => d.id !== id);
+  renderPreview();
+  if(docs.length === 0) document.getElementById('import-preview').style.display = 'none';
+}
+
+// ── Render calc (step 2) ──
+function renderCalc() {
+  const tbody = document.getElementById('calc-body');
+  const empty = document.getElementById('calc-empty');
+  const summary = document.getElementById('summary-section');
+
+  if(docs.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    summary.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  summary.style.display = 'block';
+
+  tbody.innerHTML = docs.map((d,i) => {
+    const whtVal = d.amount * (d.wht/100);
+    const net = d.amount - whtVal;
+    return `
+    <tr>
+      <td style="color:var(--brown-light); font-size:0.8rem;">${i+1}</td>
+      <td class="td-doc">${d.docNum}</td>
+      <td class="td-amount">${fmt(d.amount)} <span class="currency-badge">${d.currency}</span></td>
+      <td>
+        <input class="wht-input" type="number" value="${d.wht}" min="0" max="100" step="0.1"
+          onchange="updateWHT(${d.id}, this.value)" oninput="updateWHT(${d.id}, this.value)">
+        <span style="font-size:0.8rem; color:var(--brown-light); margin-left:3px;">%</span>
+      </td>
+      <td class="td-wht-val" id="wht-val-${d.id}">${fmt(whtVal)}</td>
+      <td class="td-net" id="net-val-${d.id}">${fmt(net)}</td>
+      <td><button class="btn-delete" onclick="removeDocAndRefresh(${d.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  updateSummary();
+}
+
+function updateWHT(id, val) {
+  const pct = Math.max(0, Math.min(100, parseFloat(val)||0));
+  const doc = docs.find(d => d.id === id);
+  if(!doc) return;
+  doc.wht = pct;
+  const whtVal = doc.amount * (pct/100);
+  const net = doc.amount - whtVal;
+  const wv = document.getElementById('wht-val-'+id);
+  const nv = document.getElementById('net-val-'+id);
+  if(wv) wv.textContent = fmt(whtVal);
+  if(nv) nv.textContent = fmt(net);
+  updateSummary();
+}
+
+function applyGlobalWHT() {
+  const pct = parseFloat(document.getElementById('global-wht').value);
+  if(isNaN(pct) || pct<0 || pct>100) { showToast('Introdu un procent valid (0–100).'); return; }
+  docs.forEach(d => d.wht = pct);
+  renderCalc();
+  showToast('WHT '+pct+'% aplicat la toate documentele ✓');
+}
+
+function removeDocAndRefresh(id) {
+  docs = docs.filter(d => d.id !== id);
+  renderPreview();
+  if(docs.length === 0) document.getElementById('import-preview').style.display = 'none';
+  renderCalc();
+}
+
+function updateSummary() {
+  let gross=0, whtTotal=0, net=0;
+  const currencies = [...new Set(docs.map(d=>d.currency))];
+  docs.forEach(d => {
+    const w = d.amount*(d.wht/100);
+    gross += d.amount;
+    whtTotal += w;
+    net += d.amount - w;
+  });
+  const curr = currencies.join('/') || '—';
+  document.getElementById('sum-gross').textContent = fmt(gross);
+  document.getElementById('sum-wht').textContent = fmt(whtTotal);
+  document.getElementById('sum-net').textContent = fmt(net);
+  ['sum-currency-1','sum-currency-2','sum-currency-3'].forEach(id => {
+    document.getElementById(id).textContent = curr;
+  });
+}
+
+// ── Render export (step 3) ──
+function renderExport() {
+  let gross=0, whtTotal=0, net=0;
+  const currencies = [...new Set(docs.map(d=>d.currency))].join('/') || '—';
+  docs.forEach(d => {
+    const w = d.amount*(d.wht/100);
+    gross += d.amount;
+    whtTotal += w;
+    net += d.amount - w;
+  });
+  document.getElementById('exp-gross').textContent = fmt(gross) + ' ' + currencies;
+  document.getElementById('exp-wht').textContent = fmt(whtTotal) + ' ' + currencies;
+  document.getElementById('exp-net').textContent = fmt(net) + ' ' + currencies;
+}
+
+// ── Export Excel ──
+function exportExcel() {
+  if(docs.length===0){ showToast('Nu există documente de exportat.'); return; }
+  const rows = [['Nr.','Nr. document','Sumă brută','Monedă','WHT %','Valoare WHT','Sumă netă de plată']];
+  docs.forEach((d,i) => {
+    const w = d.amount*(d.wht/100);
+    rows.push([i+1, d.docNum, d.amount, d.currency, d.wht, parseFloat(w.toFixed(2)), parseFloat((d.amount-w).toFixed(2))]);
+  });
+  // Totals
+  let g=0,w=0,n=0;
+  docs.forEach(d=>{ const wv=d.amount*(d.wht/100); g+=d.amount; w+=wv; n+=d.amount-wv; });
+  rows.push(['','TOTAL','','','',parseFloat(w.toFixed(2)),parseFloat(n.toFixed(2))]);
+  rows.push([]);
+  rows.push(['Export generat:', new Date().toLocaleString('ro-RO'), '', 'Total brut:', parseFloat(g.toFixed(2))]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:5},{wch:20},{wch:15},{wch:10},{wch:8},{wch:16},{wch:20}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'WHT Calcul');
+  XLSX.writeFile(wb, 'WHT_Calcul_'+today()+'.xlsx');
+  showToast('Export Excel generat ✓');
+}
+
+// ── Export CSV ──
+function exportCSV() {
+  if(docs.length===0){ showToast('Nu există documente de exportat.'); return; }
+  let csv = 'Nr.,Nr. document,Suma bruta,Moneda,WHT %,Valoare WHT,Suma neta\n';
+  docs.forEach((d,i) => {
+    const w = d.amount*(d.wht/100);
+    csv += `${i+1},${d.docNum},${d.amount},${d.currency},${d.wht},${w.toFixed(2)},${(d.amount-w).toFixed(2)}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'WHT_Calcul_'+today()+'.csv';
+  a.click();
+  showToast('Export CSV generat ✓');
+}
+
+function clearAll() {
+  if(!confirm('Ești sigur că vrei să ștergi toate documentele?')) return;
+  docs = []; nextId = 1;
+  document.getElementById('import-preview').style.display = 'none';
+  renderPreview();
+  setView('import');
+  showToast('Lista a fost resetată.');
+}
+
+// ── Helpers ──
+function fmt(n) {
+  return Number(n).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function today() {
+  return new Date().toISOString().slice(0,10).replace(/-/g,'');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Drag & drop ──
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file) { document.getElementById('fileInput').files = e.dataTransfer.files; handleFileUpload({target:{files:e.dataTransfer.files, value:''}}); }
+});
+
+</script>
+</body>
+</html>
